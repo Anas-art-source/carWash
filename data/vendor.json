@@ -1,0 +1,30 @@
+[
+    {
+        "name": "ABC Car Wash",
+        "services": [
+            {
+                "title": "Engine Wash - SUV",
+                "description": "Perfect Engine wash with imported solutions.",
+                "price": 800
+            },
+            {
+                "title": "Pressure Wash - SUV",
+                "description": "Perfect Engine wash with imported solutions.",
+                "price": 1000
+            }
+        ],
+        "experience": 2,
+        "location": {
+            "type": "Point",
+            "coordinates": [67, 25],
+            "city": "karachi",
+            "address": "Street 10"
+        },
+        "photos": ["abc-image-1.jpg", "abc-image-2.jpg", "abc-image-3.jpg"],
+        "teamPhotos": ["abc-team-1.jpg", "abc-team-2.jpg"],
+        "contactNumber": "03452150078",
+        "averageRating": 8,
+        "ratingCount": 21
+
+    }
+]
