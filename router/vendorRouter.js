@@ -9,8 +9,23 @@ vendorRouter.use("/:id/reviews", ReviewRouter )
 
 // ADMIN ROUTES
 // NEED VALIDATION HERE
+
+
+vendorRouter.route('/')
+.get(VendorController.getAllAcceptedVendor)
+.post(VendorController.uploadBothTeamAndVendorPhotos, VendorController.resizeAndSaveVendorPhotos, VendorController.registerVendor)
+
+vendorRouter.route('/:id')
+.get(VendorController.getAcceptedVendorById)
+.patch(VendorController.updateVendor)
+.delete(VendorController.deleteVendorById) // WE NEED TO CHECK THAT DELETE REQUEST IS COMMING FROM RIGHT PERSON
+
+// ADMIN ROUTES
+
+vendorRouter.use(authController.protectedRoute, authController.restrictedTo("admin"))
+
 vendorRouter.route('/admin')
-.get(authController.protectedRoute, authController.restrictedTo("admin"), VendorController.getAllNotAcceptedVendor)
+.get(VendorController.getAllNotAcceptedVendor)
 
 vendorRouter.route("/admin/:id")
 .get(VendorController.getNotAcceptedVendorById)
@@ -19,16 +34,6 @@ vendorRouter.route("/admin/:id")
 
 vendorRouter.route("/admin/inactive/:id")
 .patch(VendorController.inactiveVendor)
-
-
-vendorRouter.route('/')
-.get(VendorController.getAllAcceptedVendor)
-.post(VendorController.registerVendor)
-
-vendorRouter.route('/:id')
-.get(VendorController.getAcceptedVendorById)
-.patch(VendorController.updateVendor)
-.delete(VendorController.deleteVendorById) // WE NEED TO CHECK THAT DELETE REQUEST IS COMMING FROM RIGHT PERSON
 
 
 

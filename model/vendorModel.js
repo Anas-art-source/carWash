@@ -50,6 +50,10 @@ const VendorSchema = new mongoose.Schema({
     accepted: {
         type: Boolean,
         default: false
+    },
+    owner: {
+        type: mongoose.Types.ObjectId,
+        required: [true, "Owner Id is Required"]
     }
 }, {
     toObject: {

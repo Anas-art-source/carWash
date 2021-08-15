@@ -2,6 +2,71 @@ const Vendors = require('../model/vendorModel.js')
 const catchAsync = require('../utils/catchAsync')
 const AppError = require('../utils/AppError')
 
+const multer = require('multer');
+const sharp = require('sharp');
+const slugify = require('slugify')
+
+
+const storage = multer.memoryStorage();
+
+const fileFilter = (req, file, cb) => {
+
+    // THIS WILL ONLY ACCEPT THE FILE THAT IS JPEG, JPG, PNG AND IS IMAGE
+    const acceptedExtension = ['jpg', "jpeg", "png"]
+    const fileExtension = file.mimetype.split('/')[1]
+    const isImage = file.mimetype.split('/')[0]
+
+    if (isImage === "image" && acceptedExtension.includes(fileExtension)) {
+        cb(null, true)
+    } else {
+        cb(null, false)
+    }
+}
+
+
+const upload = multer({storage: storage, fileFilter: fileFilter});
+
+
+exports.uploadBothTeamAndVendorPhotos = upload.fields([
+    { name: "photos", maxCount: 6 },
+    { name: 'teamPhotos', maxCount: 3 }
+])
+
+
+exports.resizeAndSaveVendorPhotos = (req, res, next) => {
+
+    if (!req.files) return next(new AppError("Please upload photos of team members and business", 400))
+
+    const {teamPhotos, photos} = req.files;
+
+    const teamPhotoName = teamPhotos.map( (photo,index) => `team-${slugify(req.body.name, "-")}-${req.body.owner}-${index}.png`);
+
+    const  photoName = photos.map((photo, index) => `business-${slugify(req.body.name, "-")}-${req.body.owner}-${index}.png`);
+
+    teamPhotos.forEach( async (file, index) => {
+        await sharp(file.buffer)
+        .resize(540, 540)
+        .toFormat('png')
+        .toFile(`photo/team/${teamPhotoName[index]}`)
+    });
+
+    photos.forEach( async (file, index) => {
+        await sharp(file.buffer)
+        .resize(540, 540)
+        .toFormat('png')
+        .toFile(`photo/vendor/${photoName[index]}`)
+    });
+
+
+    req.filenames = {
+        photos: photoName,
+        teamPhotos: teamPhotoName
+    }
+
+    next()
+
+}
+
 exports.getAllAcceptedVendor = catchAsync(async (req, res, next) => {
 
     const response = await Vendors.find({accepted: true}).populate("reviews");
@@ -37,16 +102,24 @@ exports.registerVendor = catchAsync(async (req, res, next) => {
 
     //CHECK FOR EMPTY DATA SHOULD BE DONE HERE
 
+    // GIVING NAME TO PHOTOS
+    const photos = req.filenames.photos.map(name => `${process.env.WEBURL}/photo/vendor/${name}`)
+    const teamPhotos = req.filenames.teamPhotos.map(name => `${process.env.WEBURL}/photo/team/${name}`)
+
     // SANITIZING RECIEVED DATA
-    console.log(req)
-    console.log(req.body, "REQUESTTT")
+
     const vendorObj = {
         ...req.body,
+        location: JSON.parse(req.body.location),
+        services: JSON.parse(req.body.services),
+        photos: photos,
+        teamPhotos: teamPhotos,
         accepted: false
     }
 
     const response = await Vendors.create(vendorObj)
 
+    console.log(response, "RESPONSE")
     if (!response || response.length === 0) return next(new AppError(`Error`, 400))
 
 

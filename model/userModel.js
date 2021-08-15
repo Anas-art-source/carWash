@@ -11,7 +11,7 @@ const crypto = require("crypto")
 const userSchema = new mongoose.Schema({
     name: {
         type: String,
-        // required: [true, "user name is required"]
+        required: [true, "user name is required"]
     },
     email: {
         type: String,
@@ -20,12 +20,12 @@ const userSchema = new mongoose.Schema({
     },
     password: {
         type: String,
-        // required: [true, "password is required"],
+        required: [true, "password is required"],
         select: false
     },
     passwordConfirm: {
         type: String,
-        // required: [true, "you must confirm the password"],
+        required: [true, "you must confirm the password"],
         validate: {
             validator: function (val) {
                 return val === this.password
@@ -52,7 +52,6 @@ const userSchema = new mongoose.Schema({
         },
         city: String
     },
-    googleId: String,
     secret: String
 }, {
     toObject: {
@@ -74,6 +73,15 @@ userSchema.pre("save", async function(next) {
     console.log(this.password)
     next()
 })
+
+// BUSINESS LIST
+
+userSchema.virtual("business", {
+    ref: "vendors",
+    localField: "_id",
+    foreignField: "owner"
+})
+
 
 // COMPARING PASSWORD ON LOGIN
 userSchema.methods.comparePassword = async function (password, hashPassword) {

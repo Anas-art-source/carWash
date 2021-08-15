@@ -14,10 +14,15 @@ const reviewSchema = new mongoose.Schema({
         ref: "vendors"
 
     },
-    byUser: {
+    byGoogleUser: {
         type: mongoose.Types.ObjectId,
-        // ref: "users"
+        ref: "googleUser"       // ref: "users"
     },
+    byOwnUser: {
+        type: mongoose.Types.ObjectId,
+        ref: "users"       // ref: "users"
+    },
+
     date: {
         type: Date,
         default: Date.now

@@ -7,9 +7,10 @@ const catchAsync = require("../utils/catchAsync");
 const Users = require('../model/userModel');
 const jwt = require("jsonwebtoken");
 const  sendEmail = require("../utils/sendEmail")
+const googleUsers = require('../model/googleUserModel')
 
-const signToken = async (id) => {
-    const token = await jwt.sign({id : id}, process.env.JWTR_SECRET_KEY, { expiresIn: '1h'})
+const signToken = async (id, model) => {
+    const token = await jwt.sign({id : id, model: model}, process.env.JWTR_SECRET_KEY, { expiresIn: '1h'})
     return token
 }
 
@@ -21,11 +22,18 @@ const jwtVerify = async (token) => {
 
 exports.signup = catchAsync(async (req, res, next) => {
 
+
     // SANITIZING AND CREATING USER
-    const response = await Users.create({...req.body, role: "user"})
+    const profileObj = {
+        ...req.body,
+        photo: `${process.env.WEBURL}/photo/user/${req.filename}`,
+        role: "user"
+    }
+
+    const response = await Users.create(profileObj)
 
     // SIGNING JWT 
-    const loginToken = await signToken(response._id)
+    const loginToken = await signToken(response._id, "users")
 
     // SENDING RESPONSE WITH JWT IN COOKIES
     res.status(200).cookie("jwt", loginToken).json({
@@ -43,16 +51,16 @@ exports.login = catchAsync(async (req, res, next) => {
 
     const response = await Users.findOne({email: req.body.email}).select("+password"); 
 
-    const passwordCorrect = await response.comparePassword(req.body.password, response.password)
-    console.log(passwordCorrect)
+    // const passwordCorrect = await response.comparePassword(req.body.password, response.password)
 
-    if ( !(response && passwordCorrect) ) {
+    // WE COULD MAKE THIS LOGIN LOOKS MORE READABLE
+    // WILL LOOK AT THIS LATER
+    if ( !(response && ( await response.comparePassword(req.body.password, response.password)
+    )) ) {
          return next(new AppError("Invalid email or password", 400))
     }
 
-    console.log(!response)
-
-    const signupToken = await signToken(response._id)
+    const signupToken = await signToken(response._id, "users")
 
     res.status(200)
     .cookie("jwt", signupToken)
@@ -69,15 +77,24 @@ exports.protectedRoute = catchAsync(async (req, res, next) => {
     console.log(req.cookies)
     if (!req.cookies?.jwt) return next(new AppError("Please login to continue", 400));
 
-    const verifyJwt = jwtVerify(req.cookies.jwt);
+    const verifyJwt = await jwtVerify(req.cookies.jwt);
+    console.log(verifyJwt, Date.now())
 
-    if (verifyJwt.iat < (Date.now() - 1000)) return next(new AppError("session expired. Please log in again"));
+    if (verifyJwt.exp < (Date.now() / 1000)) return next(new AppError("session expired. Please log in again"));
+
+    let user;
     
-    const user = await Users.findOne({id: verifyJwt.id})
+    if (verifyJwt.model === "users" ) {
+     user = await Users.findOne({id: verifyJwt.id})
+    }
+
+
+    if (verifyJwt.model === "googleUser") {
+        user = await googleUsers.findOne({_id: verifyJwt.id})
+    }
 
     req.user = user
 
-    console.log(verifyJwt, user)
     next()
 
 
